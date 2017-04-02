@@ -8,9 +8,10 @@ import data_utils
 import _pickle as cPickle
 from data_utils import VocabularyProcessor
 from data_utils import Data
-from model import CaptionGenerator
+from model import CaptionGeneratorBasic, CaptionGeneratorBeamSearch
 import progressbar as pb
-import bleu_eval as BLEU
+# import bleu_eval as BLEU
+import BLEU as my_BLEU
 
 tf.flags.DEFINE_integer("embedding_dim", 300, "Dimensionality of word embedding (default: 300)")
 tf.flags.DEFINE_integer("hidden", 256, "hidden dimension of RNN hidden size")
@@ -57,7 +58,7 @@ class CapGenModel(object):
 		self.gen_path()
 
 	def build_model(self):
-		self.model = CaptionGenerator(hidden_size=FLAGS.hidden, 
+		self.model = CaptionGeneratorBasic(hidden_size=FLAGS.hidden, 
 									vocab_size=self.vocab_size, 
 									encoder_in_size=self.data.feats.shape[-1], 
 									encoder_in_length=self.data.feats.shape[1],
@@ -154,7 +155,8 @@ class CapGenModel(object):
 
 		score = 0.
 		for idx, s in enumerate(sentences):
-			bleu = BLEU.BLEU_score([s], self.data.truth_captions[idx])
+			# bleu = BLEU.BLEU_score([s], self.data.truth_captions[idx])
+			bleu = my_BLEU.BLEU_score(s, self.data.truth_captions[idx])
 			score += bleu
 
 		print("BLEU score {}".format(score/len(sentences)))
