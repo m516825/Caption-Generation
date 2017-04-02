@@ -58,7 +58,7 @@ class CapGenModel(object):
 		self.gen_path()
 
 	def build_model(self):
-		self.model = CaptionGeneratorMyBasic(hidden_size=FLAGS.hidden, 
+		self.model = CaptionGeneratorBasic(hidden_size=FLAGS.hidden, 
 									vocab_size=self.vocab_size, 
 									encoder_in_size=self.data.feats.shape[-1], 
 									encoder_in_length=self.data.feats.shape[1],
