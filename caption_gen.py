@@ -8,7 +8,7 @@ import data_utils
 import _pickle as cPickle
 from data_utils import VocabularyProcessor
 from data_utils import Data
-from model import CaptionGeneratorBasic, CaptionGeneratorBeamSearch
+from model import CaptionGeneratorBasic, CaptionGeneratorMyBasic
 import progressbar as pb
 # import bleu_eval as BLEU
 import BLEU as my_BLEU
@@ -58,7 +58,7 @@ class CapGenModel(object):
 		self.gen_path()
 
 	def build_model(self):
-		self.model = CaptionGeneratorBasic(hidden_size=FLAGS.hidden, 
+		self.model = CaptionGeneratorMyBasic(hidden_size=FLAGS.hidden, 
 									vocab_size=self.vocab_size, 
 									encoder_in_size=self.data.feats.shape[-1], 
 									encoder_in_length=self.data.feats.shape[1],
@@ -154,13 +154,14 @@ class CapGenModel(object):
 		print(sentences[3])
 
 		score = 0.
+		nltk_score = 0.
 		for idx, s in enumerate(sentences):
 			# bleu = BLEU.BLEU_score([s], self.data.truth_captions[idx])
 			bleu = my_BLEU.BLEU_score(s, self.data.truth_captions[idx])
+			
 			score += bleu
 
 		print("BLEU score {}".format(score/len(sentences)))
-
 
 def main(_):
 	print("\nParameters: ")

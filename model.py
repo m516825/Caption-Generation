@@ -93,7 +93,6 @@ class CaptionGeneratorBasic(object):
 
 """
 Basic attention-based caption generator without using tensorflow API
-BUGBUG, something wrong !
 """
 class CaptionGeneratorMyBasic(object):
 	def __init__(self, hidden_size, vocab_size, encoder_in_size, encoder_in_length,
@@ -140,7 +139,7 @@ class CaptionGeneratorMyBasic(object):
 			cell_output = self.en_outputs[:,-1]
 
 			for step in range(decoder_in_length):
-				if step > 0: tf.get_variable_scope().reuse_variables()
+				if step > 0: scope.reuse_variables()
 				context_vector = attention_construct_fn(cell_output, attention_keys, attention_values)
 				input_vector = tf.concat([self.d_in_em[:, step, :], context_vector], axis=-1)
 				(cell_output, state) = self.de_cell(input_vector, state)
@@ -161,7 +160,7 @@ class CaptionGeneratorMyBasic(object):
 
 			for step in range(decoder_in_length):
 
-				tf.get_variable_scope().reuse_variables()
+				scope.reuse_variables()
 
 				context_vector = attention_construct_fn(cell_output, attention_keys, attention_values)
 				input_vector = tf.concat([word_vector, context_vector], axis=-1)
