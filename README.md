@@ -17,7 +17,6 @@ First time use, you need to do the preprocessing
 ```
 $ python3 caption_gen.py --prepro 1
 ```
-<br />
 If you already have done the preprocessing
 ```
 $ python3 caption_gen.py --prepro 0
