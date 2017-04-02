@@ -9,7 +9,7 @@ tensorflow 1.0 <br />
 ## Usage 
 Download hw2 data from kaggle, and GloVe 300 dim <br />
 <br />
-./Caption-Generation/MLDS_hw2_data/*
+./Caption-Generation/MLDS_hw2_data/* <br />
 ./Caption-Generation/MLDS_hw2_data/glove/glove.6B.300d.txt
 
 ## Train
