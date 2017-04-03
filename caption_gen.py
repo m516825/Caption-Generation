@@ -8,7 +8,7 @@ import data_utils
 import _pickle as cPickle
 from data_utils import VocabularyProcessor
 from data_utils import Data
-from model import CaptionGeneratorBasic, CaptionGeneratorMyBasic
+from model import CaptionGeneratorBasic, CaptionGeneratorMyBasic, CaptionGeneratorSS
 import progressbar as pb
 # import bleu_eval as BLEU
 import BLEU as my_BLEU
@@ -22,6 +22,7 @@ tf.flags.DEFINE_integer("predict_every", 200, "predict model on dev set after th
 tf.flags.DEFINE_integer("checkpoint_every", 200, "Save model after this many steps (default: 200)")
 tf.flags.DEFINE_integer("dev_size", 200, "dev size")
 tf.flags.DEFINE_integer("num_sampled", 500, "number of negative sampling")
+tf.flags.DEFINE_integer("K", 5, "Beam Search at k (default: 5)")
 
 tf.flags.DEFINE_float("lr", 1e-3, "training learning rate")
 tf.flags.DEFINE_float("dropout_keep_prob", 0.7, "drop out rate")
@@ -39,12 +40,17 @@ tf.flags.DEFINE_string("w2v_data", "./prepro/w2v_W.dat", "word to vector matrix 
 tf.flags.DEFINE_string("prepro_train", "./prepro/train.dat", "tokenized train data's path")
 tf.flags.DEFINE_string("vocab", "./vocab", "vocab processor path")
 tf.flags.DEFINE_string("output", "./pred.txt", "output file")
+tf.flags.DEFINE_string("model_type", "CaptionGeneratorSS", "the model type, inculding CaptionGeneratorBasic, CaptionGeneratorMyBasic, CaptionGeneratorSS, (default: CaptionGeneratorSS)")
 
 tf.flags.DEFINE_boolean("eval", False, "Evaluate testing data")
 tf.flags.DEFINE_boolean("prepro", True, "To do the preprocessing")
 
 FLAGS = tf.flags.FLAGS
 FLAGS._parse_flags()
+
+classmap = {"CaptionGeneratorBasic":CaptionGeneratorBasic, 
+			"CaptionGeneratorMyBasic":CaptionGeneratorMyBasic,
+			"CaptionGeneratorSS":CaptionGeneratorSS}
 
 class CapGenModel(object):
 	def __init__(self, data, w2v_W, vocab_processor, use_nce=True):
@@ -59,7 +65,7 @@ class CapGenModel(object):
 		self.gen_path()
 
 	def build_model(self):
-		self.model = CaptionGeneratorMyBasic(hidden_size=FLAGS.hidden, 
+		self.model = classmap[FLAGS.model_type](hidden_size=FLAGS.hidden, 
 									vocab_size=self.vocab_size, 
 									encoder_in_size=self.data.feats.shape[-1], 
 									encoder_in_length=self.data.feats.shape[1],
@@ -68,7 +74,8 @@ class CapGenModel(object):
 									embedding_size=FLAGS.embedding_dim,
 									neg_sample_num=self.sample_num,
 									start_id=self.vocab_processor._mapping['<BOS>'],
-									end_id=self.vocab_processor._mapping['<EOS>'])
+									end_id=self.vocab_processor._mapping['<EOS>'],
+									Bk=FLAGS.K)
 		self.global_step = tf.Variable(0, name='global_step', trainable=False)
 
 		self.optimizer = tf.train.AdamOptimizer(FLAGS.lr)
@@ -91,6 +98,14 @@ class CapGenModel(object):
 		self.checkpoint_prefix = os.path.join(self.checkpoint_dir, "model")
 		if not os.path.exists(self.checkpoint_dir):
 			os.makedirs(self.checkpoint_dir)
+
+	def sigmoid_decay(self, ep, k=15):
+		static = 4
+		if ep < static:
+			return 1.
+		else:
+			ep = ep - static
+			return k/(k+np.exp(ep/k))
 	
 	def train(self):
 		batch_num = self.data.length//FLAGS.batch_size if self.data.length%FLAGS.batch_size==0 else self.data.length//FLAGS.batch_size + 1
@@ -110,11 +125,19 @@ class CapGenModel(object):
 
 					e_in, d_in_idx, d_out_idx = self.data.next_batch(FLAGS.batch_size)
 
-					feed_dict = {
-						self.model.e_in:e_in,
-						self.model.d_in_idx:d_in_idx,
-						self.model.d_out_idx:d_out_idx	
-					}
+					if self.model.__class__.__name__ == "CaptionGeneratorSS":
+						rand_matrix = np.random.rand(d_in_idx.shape[0], d_in_idx.shape[1])
+						use_pred = rand_matrix > self.sigmoid_decay(ep)
+						feed_dict = {
+							self.model.e_in:e_in,
+							self.model.d_in_idx:d_in_idx,
+							self.model.d_out_idx:d_out_idx,
+							self.model.use_pred:use_pred}
+					else:
+						feed_dict = {
+							self.model.e_in:e_in,
+							self.model.d_in_idx:d_in_idx,
+							self.model.d_out_idx:d_out_idx}
 
 					loss, step, _ = self.sess.run([self.model.cost, self.global_step, self.updates], feed_dict=feed_dict)
 
@@ -131,7 +154,8 @@ class CapGenModel(object):
 				print ("\nSaved model checkpoint to {}\n".format(path))
 
 				self.inference()
-				self.BeamSearch()
+				if self.model.__class__.__name__ != "CaptionGeneratorBasic":
+					self.BeamSearch()
 
 	def inference(self):
 		feed_dict = {

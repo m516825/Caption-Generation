@@ -21,7 +21,34 @@ If you already have done the preprocessing
 ```
 $ python3 caption_gen.py --prepro 0
 ```
+## Model
+There are three different model available, including **CaptionGeneratorBasic** <br />
+**CaptionGeneratorMyBasic**, and **CaptionGeneratorSS** <br />
 
-## TODO
-- Beam Search
-- Schedule Sampling
+1. CaptionGeneratorBasic
+  * greedy inference
+2. CaptionGeneratorMyBasic
+  * beam search
+  * greedy inference
+3. CaptionGeneratorSS
+  * schedule sampling
+  * beam search
+  * greedy search
+
+You can set model_type to new different model. e.g.
+```
+$ python3 caption_gen.py --prepro [1/0] --model_type=CaptionGeneratorSS
+```
+
+## Inference 
+This code provide two inference methods, **Greedy Search** and **Beam Search** <br />
+beam search inference is not available in CaptionGeneratorBasic model. <br />
+(default beam search @k is set to 5)
+
+
+
+
+
+
+
+
