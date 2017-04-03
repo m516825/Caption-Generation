@@ -2,8 +2,8 @@ Caption-Generation
 ====
 Caption generation using seq2seq model with LSTM cell
 
-<img src="https://github.com/m516825/Caption-Generation/blob/master/img.png" width="200" height="200" />
-*a little boy is playing with a ball*
+<img src="https://github.com/m516825/Caption-Generation/blob/master/img.png" height="400" />
+Prediction : "a small dog is playing with a ball"
 
 ## Environment
 python3 <br />
