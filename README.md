@@ -22,7 +22,7 @@ If you already have done the preprocessing
 $ python3 caption_gen.py --prepro 0
 ```
 ## Model
-There are three different model available. <br />
+There are three different models available. <br />
 
 1. **CaptionGeneratorBasic**
   * greedy inference
