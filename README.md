@@ -2,7 +2,7 @@ Caption-Generation
 ====
 Caption generation using seq2seq model with LSTM cell
 
-![Gog](https://github.com/m516825/Caption-Generation/blob/master/img.png =250x)
+![Gog](https://github.com/m516825/Caption-Generation/blob/master/img.png)
 *a little boy is playing with a ball*
 
 ## Environment
