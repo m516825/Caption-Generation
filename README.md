@@ -2,6 +2,9 @@ Caption-Generation
 ====
 Caption generation using seq2seq model with LSTM cell
 
+![Gog](https://github.com/m516825/Caption-Generation/img.png =250x)
+*a little boy is playing with a ball*
+
 ## Environment
 python3 <br />
 tensorflow 1.0 <br />
