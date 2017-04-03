@@ -1,6 +1,6 @@
 Caption-Generation
 ====
-Caption generation using seq2seq model with LSTM cell
+Machine generate a reasonable caption for input video, using attention-based seq2seq model with LSTM cell
 
 <img src="https://github.com/m516825/Caption-Generation/blob/master/img.png" height="400" />
 Model Prediction : "a small dog is playing with a ball"
