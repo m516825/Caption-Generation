@@ -99,7 +99,7 @@ class CapGenModel(object):
 		if not os.path.exists(self.checkpoint_dir):
 			os.makedirs(self.checkpoint_dir)
 
-	def sigmoid_decay(self, ep, k=15):
+	def sigmoid_decay(self, ep, k=25):
 		static = 4
 		if ep < static:
 			return 1.
