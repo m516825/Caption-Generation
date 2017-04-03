@@ -22,15 +22,14 @@ If you already have done the preprocessing
 $ python3 caption_gen.py --prepro 0
 ```
 ## Model
-There are three different model available, including **CaptionGeneratorBasic** <br />
-**CaptionGeneratorMyBasic**, and **CaptionGeneratorSS** <br />
+There are three different model available. <br />
 
-1. CaptionGeneratorBasic
+1. **CaptionGeneratorBasic**
   * greedy inference
-2. CaptionGeneratorMyBasic
+2. **CaptionGeneratorMyBasic**
   * beam search
   * greedy inference
-3. CaptionGeneratorSS
+3. **CaptionGeneratorSS**
   * schedule sampling
   * beam search
   * greedy search
