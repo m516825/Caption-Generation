@@ -16,6 +16,23 @@ except ImportError:
 min_count = 3
 add_count = 5
 
+class BeamLink(object):
+	def __init__(self, value, h_value):
+		self.prev = None
+		self.hash_value = h_value
+		self.value = value
+	def set_prev(self, prev):
+		self.prev = prev
+
+	def get_path(self):
+		path = []
+		c_prev = self
+		while c_prev is not None:
+			path.append(c_prev.value)
+			c_prev = c_prev.prev
+		path.reverse()
+		return path
+
 class Data(object):
 	def __init__(self, feats, encoder_in_idx, decoder_in, v_encoder_in, truth_captions):
 		self.length = encoder_in_idx.shape[0]

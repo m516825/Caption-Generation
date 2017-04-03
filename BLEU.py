@@ -22,4 +22,4 @@ def BLEU_score(candidate, references):
 
 		score.append(bleu)
 
-	return max(score)
+	return np.mean(score)

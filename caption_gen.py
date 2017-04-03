@@ -12,6 +12,7 @@ from model import CaptionGeneratorBasic, CaptionGeneratorMyBasic
 import progressbar as pb
 # import bleu_eval as BLEU
 import BLEU as my_BLEU
+from data_utils import BeamLink
 
 tf.flags.DEFINE_integer("embedding_dim", 300, "Dimensionality of word embedding (default: 300)")
 tf.flags.DEFINE_integer("hidden", 256, "hidden dimension of RNN hidden size")
@@ -22,7 +23,7 @@ tf.flags.DEFINE_integer("checkpoint_every", 200, "Save model after this many ste
 tf.flags.DEFINE_integer("dev_size", 200, "dev size")
 tf.flags.DEFINE_integer("num_sampled", 500, "number of negative sampling")
 
-tf.flags.DEFINE_float("lr", 1e-2, "training learning rate")
+tf.flags.DEFINE_float("lr", 1e-3, "training learning rate")
 tf.flags.DEFINE_float("dropout_keep_prob", 0.7, "drop out rate")
 
 tf.flags.DEFINE_string("data_dir", "./MLDS_hw2_data/", "Data path")
@@ -58,7 +59,7 @@ class CapGenModel(object):
 		self.gen_path()
 
 	def build_model(self):
-		self.model = CaptionGeneratorBasic(hidden_size=FLAGS.hidden, 
+		self.model = CaptionGeneratorMyBasic(hidden_size=FLAGS.hidden, 
 									vocab_size=self.vocab_size, 
 									encoder_in_size=self.data.feats.shape[-1], 
 									encoder_in_length=self.data.feats.shape[1],
@@ -130,6 +131,7 @@ class CapGenModel(object):
 				print ("\nSaved model checkpoint to {}\n".format(path))
 
 				self.inference()
+				self.BeamSearch()
 
 	def inference(self):
 		feed_dict = {
@@ -148,20 +150,71 @@ class CapGenModel(object):
 				s.append(vocab)
 			sentences.append(' '.join(s))
 
+		score = 0.
+		for idx, s in enumerate(sentences):
+			# bleu = BLEU.BLEU_score([s], self.data.truth_captions[idx])
+			bleu = my_BLEU.BLEU_score(s, self.data.truth_captions[idx])
+			score += bleu
+
+		print("-------------------")
+		print("* Greedy Search")
+		print("BLEU score {}".format(score/len(sentences)))
 		print(sentences[0])
 		print(sentences[1])
 		print(sentences[2])
 		print(sentences[3])
+		print("-------------------")
+
+	def BeamSearch(self):
+		feed_dict = {
+				self.model.e_in:self.data.v_encoder_in,
+		}
+		step_max_words, chosen_idx, chosen_idx_f = self.sess.run([self.model.step_max_words, self.model.chosen_idx, self.model.chosen_idx_f], feed_dict=feed_dict)
+
+		k = chosen_idx.shape[-1]
+
+		beam_result = []
+		beam_seq_k = []
+		for b in range(step_max_words.shape[0]):
+			beam_seq_k.append({})
+
+			
+		for batch in range(step_max_words.shape[0]):
+			start_candidate = None
+			for step in range(step_max_words.shape[1]):
+				if step == 0:
+					for idx in range(0, k*k, k):
+						beam_seq_k[batch]["{}_{}".format(step, idx//k)] = BeamLink(step_max_words[batch][step][idx], "{}_{}".format(step, idx//4))
+				elif step > 0 and step < step_max_words.shape[1]-1:
+					max_idx = chosen_idx[batch][step-1]
+					for i, idx in enumerate(max_idx):
+						child = BeamLink(step_max_words[batch][step][idx], "{}_{}".format(step, i))
+						child.set_prev(beam_seq_k[batch]["{}_{}".format(step-1, idx//k)])
+						beam_seq_k[batch][child.hash_value] = child
+				else:
+					idx = chosen_idx_f[batch][0]
+					final = BeamLink(step_max_words[batch][step][idx], "{}_{}".format(step, "final"))
+					final.set_prev(beam_seq_k[batch]["{}_{}".format(step-1, idx//k)])
+					beam_result.append(final)
+
+		sentences = []
+		for result in beam_result:
+			s_id = result.get_path()
+			s_word = [self.vocab_processor._reverse_mapping[idx] for idx in s_id if idx != self.vocab_processor._mapping["<EOS>"]]
+			sentences.append(' '.join(s_word))
 
 		score = 0.
-		nltk_score = 0.
 		for idx, s in enumerate(sentences):
-			# bleu = BLEU.BLEU_score([s], self.data.truth_captions[idx])
 			bleu = my_BLEU.BLEU_score(s, self.data.truth_captions[idx])
-			
 			score += bleu
 
+		print("* Beam Search @{}".format(k))
 		print("BLEU score {}".format(score/len(sentences)))
+		print(sentences[0])
+		print(sentences[1])
+		print(sentences[2])
+		print(sentences[3])
+		print("-------------------")
 
 def main(_):
 	print("\nParameters: ")
