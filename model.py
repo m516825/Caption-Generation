@@ -176,7 +176,7 @@ class CaptionGeneratorMyBasic(object):
 			self.de_outputs_infer = tf.transpose(tf.stack(preds), [1, 0, 2])
 
 			""" 
-				Beam Search START, BUGBUG Somthing Wrong
+				Beam Search START
 			"""
 
 			# first prediction
