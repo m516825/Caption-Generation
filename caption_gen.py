@@ -22,7 +22,7 @@ tf.flags.DEFINE_integer("predict_every", 200, "predict model on dev set after th
 tf.flags.DEFINE_integer("checkpoint_every", 200, "Save model after this many steps (default: 200)")
 tf.flags.DEFINE_integer("dev_size", 200, "dev size")
 tf.flags.DEFINE_integer("num_sampled", 500, "number of negative sampling")
-tf.flags.DEFINE_integer("K", 5, "Beam Search at k (default: 5)")
+tf.flags.DEFINE_integer("K", 10, "Beam Search at k (default: 5)")
 
 tf.flags.DEFINE_float("lr", 1e-3, "training learning rate")
 tf.flags.DEFINE_float("dropout_keep_prob", 0.7, "drop out rate")
@@ -78,7 +78,7 @@ class CapGenModel(object):
 									Bk=FLAGS.K)
 		self.global_step = tf.Variable(0, name='global_step', trainable=False)
 
-		self.optimizer = tf.train.AdamOptimizer(FLAGS.lr)
+		self.optimizer = tf.train.RMSPropOptimizer(FLAGS.lr)
 
 		tvars = tf.trainable_variables()
 

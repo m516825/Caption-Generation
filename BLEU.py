@@ -11,12 +11,12 @@ def BLEU_score(candidate, references):
 		for w in reference_s:
 			if w in candidate_s:
 				precision += 1
-		precision = precision/len(candidate_s)
+		precision = precision/len(candidate_s) if len(candidate_s) > 0 else 0
 
 		if len(candidate_s) > len(reference_s):
 			bp = 1
 		else:
-			bp = np.exp(1-len(reference_s)/len(candidate_s))
+			bp = np.exp(1-len(reference_s)/len(candidate_s)) if len(candidate_s) > 0 else 0
 
 		bleu = precision * bp
 
