@@ -34,7 +34,7 @@ class BeamLink(object):
 		return path
 
 class Data(object):
-	def __init__(self, feats, encoder_in_idx, decoder_in, v_encoder_in, truth_captions):
+	def __init__(self, feats, encoder_in_idx, decoder_in, v_encoder_in, truth_captions, t_encoder_in, files):
 		self.length = encoder_in_idx.shape[0]
 		self.current = 0
 		self.feats = feats
@@ -43,6 +43,8 @@ class Data(object):
 		# validation data
 		self.v_encoder_in = v_encoder_in
 		self.truth_captions = truth_captions
+		self.t_encoder_in = t_encoder_in
+		self.files = files
 
 	def next_batch(self, size):
 		if self.current == 0:
@@ -184,6 +186,21 @@ def load_valid(valid_dir, valid_lab):
 		feats.append(feat)
 
 	return np.array(feats, dtype='float32'), truth_captions
+
+def load_task(task_dir):
+
+	feats = []
+	paths = []
+	files = []
+	for dirPath, dirNames, fileNames in os.walk(task_dir):
+		for f in fileNames:
+			paths.append(os.path.join(task_dir, f))
+			files.append(f)
+	for path in paths:
+		feat = np.load(path)
+		feats.append(feat)
+
+	return np.array(feats, dtype='float32'), files
 
 def gen_train_data(train_dir, train_lab, train_dict):
 	tlab = json.load(open(train_lab, 'r'))

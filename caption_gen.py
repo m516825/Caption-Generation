@@ -16,13 +16,13 @@ from data_utils import BeamLink
 
 tf.flags.DEFINE_integer("embedding_dim", 300, "Dimensionality of word embedding (default: 300)")
 tf.flags.DEFINE_integer("hidden", 256, "hidden dimension of RNN hidden size")
-tf.flags.DEFINE_integer("epoch", 100, "number of training epoch")
+tf.flags.DEFINE_integer("epoch", 200, "number of training epoch")
 tf.flags.DEFINE_integer("batch_size", 100, "batch size per iteration")
 tf.flags.DEFINE_integer("predict_every", 200, "predict model on dev set after this many steps (default: 200)")
 tf.flags.DEFINE_integer("checkpoint_every", 200, "Save model after this many steps (default: 200)")
 tf.flags.DEFINE_integer("dev_size", 200, "dev size")
 tf.flags.DEFINE_integer("num_sampled", 500, "number of negative sampling")
-tf.flags.DEFINE_integer("K", 10, "Beam Search at k (default: 5)")
+tf.flags.DEFINE_integer("K", 3, "Beam Search at k (default: 5)")
 
 tf.flags.DEFINE_float("lr", 1e-3, "training learning rate")
 tf.flags.DEFINE_float("dropout_keep_prob", 0.7, "drop out rate")
@@ -34,6 +34,7 @@ tf.flags.DEFINE_string("test_id", "./MLDS_hw2_data/testing_id.txt", "testing dat
 tf.flags.DEFINE_string("test_dir", "./MLDS_hw2_data/testing_data/feat/", "test data directory with feat feature")
 tf.flags.DEFINE_string("valid_lab", "./MLDS_hw2_data/testing_public_label.json", "validation data, id and caption")
 tf.flags.DEFINE_string("valid_dir", "./MLDS_hw2_data/testing_data/feat/", "validation data directory with feat feature")
+tf.flags.DEFINE_string("task_dir", "./Task_1/feat/", "task directory")
 tf.flags.DEFINE_string("vector_file", "./MLDS_hw2_data/glove/glove.6B.300d.txt", "Word representation vectors' file")
 tf.flags.DEFINE_string("checkpoint_file", "", "checkpoint_file to be load")
 tf.flags.DEFINE_string("w2v_data", "./prepro/w2v_W.dat", "word to vector matrix for our vocabulary")
@@ -44,6 +45,7 @@ tf.flags.DEFINE_string("model_type", "CaptionGeneratorSS", "the model type, incu
 
 tf.flags.DEFINE_boolean("eval", False, "Evaluate testing data")
 tf.flags.DEFINE_boolean("prepro", True, "To do the preprocessing")
+tf.flags.DEFINE_boolean("pred_task", False, "")
 
 FLAGS = tf.flags.FLAGS
 FLAGS._parse_flags()
@@ -99,8 +101,8 @@ class CapGenModel(object):
 		if not os.path.exists(self.checkpoint_dir):
 			os.makedirs(self.checkpoint_dir)
 
-	def sigmoid_decay(self, ep, k=25):
-		static = 4
+	def sigmoid_decay(self, ep, k=30):
+		static = 50
 		if ep < static:
 			return 1.
 		else:
@@ -148,18 +150,24 @@ class CapGenModel(object):
 					pbar.update(b+1)
 				pbar.finish()
 
-				print (">>cost: {}".format(cost/batch_num))
+				print (">>cost: {}".format(cost))
 
 				path = self.saver.save(self.sess, self.checkpoint_prefix, global_step=current_step)
 				print ("\nSaved model checkpoint to {}\n".format(path))
 
-				self.inference()
-				if self.model.__class__.__name__ != "CaptionGeneratorBasic":
-					self.BeamSearch()
+				if FLAGS.pred_task:
+					encoder_in = self.data.t_encoder_in
+				else:
+					encoder_in = self.data.v_encoder_in
 
-	def inference(self):
+				self.inference(encoder_in, task=FLAGS.pred_task)
+
+				if self.model.__class__.__name__ != "CaptionGeneratorBasic":
+					self.BeamSearch(encoder_in, task=FLAGS.pred_task)
+
+	def inference(self, encoder_in, task=False):
 		feed_dict = {
-				self.model.e_in:self.data.v_encoder_in,
+				self.model.e_in:encoder_in,
 			}
 		preds = self.sess.run(self.model.de_outputs_infer, feed_dict=feed_dict)
 		sentences = []
@@ -173,25 +181,31 @@ class CapGenModel(object):
 					break
 				s.append(vocab)
 			sentences.append(' '.join(s))
+		if task:	
+			print("-------------------")
+			for idx, f in enumerate(self.data.files):
+				print("{} : {}".format(f, sentences[idx]))
+			print("-------------------")
+		else:
+			score = 0.
+			for idx, s in enumerate(sentences):
+				# bleu = BLEU.BLEU_score([s], self.data.truth_captions[idx])
+				bleu = my_BLEU.BLEU_score(s, self.data.truth_captions[idx])
+				score += bleu
 
-		score = 0.
-		for idx, s in enumerate(sentences):
-			# bleu = BLEU.BLEU_score([s], self.data.truth_captions[idx])
-			bleu = my_BLEU.BLEU_score(s, self.data.truth_captions[idx])
-			score += bleu
+			print("-------------------")
+			print("* Greedy Search")
+			print("BLEU score {}".format(score/len(sentences)))
+			print(sentences[0])
+			print(sentences[1])
+			print(sentences[2])
+			print(sentences[3])
+			print(sentences[4])
+			print("-------------------")
 
-		print("-------------------")
-		print("* Greedy Search")
-		print("BLEU score {}".format(score/len(sentences)))
-		print(sentences[0])
-		print(sentences[1])
-		print(sentences[2])
-		print(sentences[3])
-		print("-------------------")
-
-	def BeamSearch(self):
+	def BeamSearch(self, encoder_in, task=False):
 		feed_dict = {
-				self.model.e_in:self.data.v_encoder_in,
+				self.model.e_in:encoder_in,
 		}
 		step_max_words, chosen_idx, chosen_idx_f = self.sess.run([self.model.step_max_words, self.model.chosen_idx, self.model.chosen_idx_f], feed_dict=feed_dict)
 
@@ -227,18 +241,25 @@ class CapGenModel(object):
 			s_word = [self.vocab_processor._reverse_mapping[idx] for idx in s_id if idx != self.vocab_processor._mapping["<EOS>"]]
 			sentences.append(' '.join(s_word))
 
-		score = 0.
-		for idx, s in enumerate(sentences):
-			bleu = my_BLEU.BLEU_score(s, self.data.truth_captions[idx])
-			score += bleu
+		if task:
+			print("-------------------")
+			for idx, f in enumerate(self.data.files):
+				print("{} : {}".format(f, sentences[idx]))
+			print("-------------------")
+		else:
+			score = 0.
+			for idx, s in enumerate(sentences):
+				bleu = my_BLEU.BLEU_score(s, self.data.truth_captions[idx])
+				score += bleu
 
-		print("* Beam Search @{}".format(k))
-		print("BLEU score {}".format(score/len(sentences)))
-		print(sentences[0])
-		print(sentences[1])
-		print(sentences[2])
-		print(sentences[3])
-		print("-------------------")
+			print("* Beam Search @{}".format(k))
+			print("BLEU score {}".format(score/len(sentences)))
+			print(sentences[0])
+			print(sentences[1])
+			print(sentences[2])
+			print(sentences[3])
+			print(sentences[4])
+			print("-------------------")
 
 def main(_):
 	print("\nParameters: ")
@@ -270,11 +291,16 @@ def main(_):
 		print("Start generating validation data...")
 		v_encoder_in, truth_captions = data_utils.load_valid(FLAGS.valid_dir, FLAGS.valid_lab)
 
+		t_encoder_in = None
+		files = None
+		if FLAGS.task_dir != None:
+			t_encoder_in, files = data_utils.load_task(FLAGS.task_dir)
+
 		print('feats size: {}, training size: {}'.format(len(feats), len(encoder_in_idx)))
 		print(encoder_in_idx.shape, decoder_in.shape)
 		print(v_encoder_in.shape, len(truth_captions))
 
-		data = Data(feats, encoder_in_idx, decoder_in, v_encoder_in, truth_captions)
+		data = Data(feats, encoder_in_idx, decoder_in, v_encoder_in, truth_captions, t_encoder_in, files)
 
 		model = CapGenModel(data, w2v_W, vocab_processor)
 
