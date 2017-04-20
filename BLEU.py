@@ -8,8 +8,8 @@ def BLEU_score(candidate, references):
 	for reference in references:
 		precision = 0
 		reference_s = reference.split()
-		for w in reference_s:
-			if w in candidate_s:
+		for w in candidate_s:
+			if w in reference_s:
 				precision += 1
 		precision = precision/len(candidate_s) if len(candidate_s) > 0 else 0
 
