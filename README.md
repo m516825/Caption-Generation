@@ -9,6 +9,9 @@ Model Prediction : "a small dog is playing with a ball"
 python3 <br />
 tensorflow 1.0 <br />
 
+## Data
+[google drive link](https://drive.google.com/file/d/0BzyBz0sWlxlYTnNnTTJtbkFXSWs/view?usp=sharing)
+
 ## Usage 
 Download hw2 data from kaggle, and GloVe 300 dim <br />
 <br />
