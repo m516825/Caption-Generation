@@ -10,7 +10,7 @@ python3 <br />
 tensorflow 1.0 <br />
 
 ## Data
-[source link](http://speech.ee.ntu.edu.tw/~yangchiyi/MLDS_hw2/MLDS_hw2_data.tar.gz)
+[source link](http://speech.ee.ntu.edu.tw/~yangchiyi/MLDS_hw2/MLDS_hw2_data.tar.gz) <br />
 [google drive link](https://drive.google.com/file/d/0BzyBz0sWlxlYTnNnTTJtbkFXSWs/view?usp=sharing)
 
 ## Usage 
